@@ -19,11 +19,29 @@ namespace Splashes
 		static void                    create_ripple(const RE::NiPoint3& a_pos, float a_displacementMult);
 	};
 
+	inline bool CSInstalled{ false };
+
 	template <class T, TYPE type>
 	class ProjectileManager
 	{
 	public:
-		static void Install();
+		static void Install()
+		{
+			auto [enableSplash, enableRipple] = Settings::GetSingleton()->GetInstalled(type);
+			if (!enableSplash && !enableRipple) {
+				return;
+			}
+
+			stl::write_vfunc<T, Update>(0x0AB);
+
+			//disabling cone water splash
+			if constexpr (type == kCone) {
+				REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(42638, 43806), OFFSET(0x48D, 0x3B7) };
+				REL::safe_write(target.address(), std::uint8_t{ 0xEB });
+			}
+
+			logger::info("Installed {}"sv, typeid(ProjectileManager).name());
+		}
 
 	private:
 		struct Update
@@ -88,13 +106,15 @@ namespace Splashes
 						const auto startPos = a_projectile->GetPosition();
 						auto [height, level] = util::get_submerged_water_level(a_projectile, startPos);
 						if (level >= 0.01f && level < 1.0f) {
-							create_splash(a_projectile, { startPos.x, startPos.y, height });
+							RE::NiPoint3 splashPos{ startPos.x, startPos.y, height };
+							create_splash(a_projectile, splashPos);
 						}
 					}
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
+		private:
 			static void create_splash(const T* a_projectile, const RE::NiPoint3& a_pos)
 			{
 				const auto root = a_projectile->Get3D();
@@ -179,7 +199,7 @@ namespace Splashes
 							time = 1.0f;
 						}
 
-						RE::BSTempEffectParticle::Spawn(cell, time, modelName.c_str(), matrix, a_pos, scale, 7, nullptr);
+						RE::BSTempEffectParticle::Spawn(cell, time, modelName.c_str(), matrix, a_pos, scale, CSInstalled ? 1 : 7, nullptr);
 					}
 				}
 
@@ -189,25 +209,6 @@ namespace Splashes
 			}
 		};
 	};
-
-	template <class T, TYPE type>
-	void ProjectileManager<T, type>::Install()
-	{
-		auto [enableSplash, enableRipple] = Settings::GetSingleton()->GetInstalled(type);
-		if (!enableSplash && !enableRipple) {
-			return;
-		}
-
-		stl::write_vfunc<T, Update>(0x0AB);
-
-		//disabling cone water splash
-		if constexpr (type == kCone) {
-			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(42638, 43806), OFFSET(0x48D, 0x3B7) };
-			REL::safe_write(target.address(), std::uint8_t{ 0xEB });
-		}
-
-		logger::info("Installed {}"sv, typeid(ProjectileManager).name());
-	}
 
 	class ExplosionManager
 	{
@@ -242,7 +243,7 @@ namespace Splashes
 				func(a_explosion);
 
 				const auto cell = a_explosion->parentCell;
-				const auto root = cell && a_explosion->flags.any(RE::Explosion::Flags::kInWater) ? a_explosion->Get3D() : nullptr;
+				const auto root = cell && a_explosion->flags.any(RE::Explosion::Flags::kUnderwater) ? a_explosion->Get3D() : nullptr;
 
 				create_explosion(a_explosion, cell, root);
 			}
@@ -258,7 +259,7 @@ namespace Splashes
 
 				const auto explosion = stl::adjust_pointer<RE::Explosion>(&a_handle, -0xD8);
 				const auto cell = explosion ? explosion->GetParentCell() : nullptr;
-				const auto root = cell && explosion->flags.any(RE::Explosion::Flags::kInWater) ? explosion->Get3D() : nullptr;
+				const auto root = cell && explosion->flags.any(RE::Explosion::Flags::kUnderwater) ? explosion->Get3D() : nullptr;
 
 				create_explosion(explosion, cell, root);
 

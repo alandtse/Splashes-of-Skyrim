@@ -75,8 +75,10 @@ namespace Splashes
 	{
 		const auto displacement = 0.0099999998f * a_displacementMult;
 
-		if (const auto taskPool = RE::TaskQueueInterface::GetSingleton()) {
-			taskPool->QueueAddRipple(displacement, a_pos);
+		if (RE::TaskQueueInterface::ShouldUseTaskQueue()) {
+			RE::TaskQueueInterface::GetSingleton()->QueueAddRipple(displacement, a_pos);
+		} else {
+			RE::TESWaterSystem::GetSingleton()->AddRipple(a_pos, displacement);
 		}
 	}
 
@@ -91,6 +93,8 @@ namespace Splashes
 		ProjectileManager<RE::BeamProjectile, kBeam>::Install();
 
 		ExplosionManager::Install();
+
+		CSInstalled = GetModuleHandleA("CommunityShaders.dll") != nullptr;
 	}
 
 	void InstallOnDataLoad()
@@ -105,7 +109,7 @@ namespace Splashes
 		std::uint32_t count = 0;
 		const auto    dataHandler = RE::TESDataHandler::GetSingleton();
 		for (const auto& activator : dataHandler->GetFormArray<RE::TESObjectACTI>()) {
-			if (activator && activator->IsWater() && !activator->QHasCurrents() && !activator->GetRandomAnim()) {
+			if (activator && activator->IsWater() && !activator->QHasCurrents()) {
 				activator->flags.reset(Flag::kNoDisplacement);
 				count++;
 			}

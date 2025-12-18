@@ -1,13 +1,13 @@
 #pragma once
 
 #include "RE/Skyrim.h"
+#include "REX/REX/Singleton.h"
 #include "SKSE/SKSE.h"
 
 #pragma warning(push)
 #include <ClibUtil/RNG.hpp>
 #include <ClibUtil/numeric.hpp>
 #include <ClibUtil/simpleINI.hpp>
-#include <ClibUtil/singleton.hpp>
 #include <ClibUtil/string.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <xbyak/xbyak.h>
@@ -21,7 +21,6 @@ namespace numeric = clib_util::numeric;
 namespace ini = clib_util::ini;
 
 using namespace std::literals;
-using namespace clib_util::singleton;
 
 namespace stl
 {
@@ -31,7 +30,6 @@ namespace stl
 	void write_thunk_call(std::uintptr_t a_src)
 	{
 		auto& trampoline = SKSE::GetTrampoline();
-		SKSE::AllocTrampoline(14);
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 

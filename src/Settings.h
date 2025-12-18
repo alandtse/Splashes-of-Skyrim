@@ -54,7 +54,7 @@ namespace Splashes
 		float splashRadius{ 250.0f };
 	};
 
-	class Settings : public ISingleton<Settings>
+	class Settings : public REX::Singleton<Settings>
 	{
 	public:
 		void LoadSettings();
@@ -84,13 +84,13 @@ namespace Splashes
 		Projectile beam{ "Beam"sv, 0.4f };
 		Explosion  explosion{ "Explosion", 5.0f };
 
-		std::map<SIZE, float> splashRadii{
+		std::unordered_map<SIZE, float> splashRadii{
 			{ kHeavy, 35.0f },
 			{ kMedium, 20.0f },
 			{ kLight, 5.0f }
 		};
 
-		std::map<SIZE, float> splashScales{
+		std::unordered_map<SIZE, float> splashScales{
 			{ kHeavy, 1.0f },
 			{ kMedium, 0.75f },
 			{ kLight, 0.5f }
