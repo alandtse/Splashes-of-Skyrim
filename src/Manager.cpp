@@ -24,25 +24,31 @@ namespace Splashes
 				return waterHeight;
 			}
 
+			const RE::BSSpinLockGuard locker(waterManager->lock);  //serialize against water-system mutations
+
 			const auto get_nearest_water_object_height = [&]() {
 				const auto settings = Settings::GetSingleton();
-				for (const auto& waterObject : waterManager->waterObjects) {
-					if (waterObject) {
-						if (!settings->GetAllowDamageWater()) {
-							if (const auto waterForm = waterObject->waterType; waterForm && waterForm->GetDangerous()) {
-								continue;
-							}
+				for (const auto& waterObjectPtr : waterManager->waterObjects) {
+					const auto waterObject = waterObjectPtr.get();  //read slot once to avoid data race
+					if (!waterObject) {
+						continue;
+					}
+					if (!settings->GetAllowDamageWater()) {
+						if (const auto waterForm = waterObject->waterType; waterForm && waterForm->GetDangerous()) {
+							continue;
 						}
-						for (const auto& bound : waterObject->multiBounds) {
-							if (bound) {
-								if (auto size{ bound->size }; size.z <= 10.0f) {  //avoid sloped water
-									auto       center{ bound->center };
-									const auto boundMin = center - size;
-									const auto boundMax = center + size;
-									if (!(a_pos.x < boundMin.x || a_pos.x > boundMax.x || a_pos.y < boundMin.y || a_pos.y > boundMax.y)) {
-										return center.z;
-									}
-								}
+					}
+					for (const auto& boundPtr : waterObject->multiBounds) {
+						const auto bound = boundPtr.get();
+						if (!bound) {
+							continue;
+						}
+						if (auto size{ bound->size }; size.z <= 10.0f) {  //avoid sloped water
+							auto       center{ bound->center };
+							const auto boundMin = center - size;
+							const auto boundMax = center + size;
+							if (!(a_pos.x < boundMin.x || a_pos.x > boundMax.x || a_pos.y < boundMin.y || a_pos.y > boundMax.y)) {
+								return center.z;
 							}
 						}
 					}
