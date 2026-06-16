@@ -1,6 +1,6 @@
 {
   "name": "splashesofskyrim",
-  "version-string": "1.4.1",
+  "version-string": "1.5.0",
   "description": "Adds projectile based splashes to water surfaces",
   "homepage": "https://github.com/powerof3/Splashes-of-Skyrim",
   "license": "MIT",
@@ -10,5 +10,5 @@
     "spdlog",
     "xbyak"
   ],
-  "builtin-baseline": "edffab1bcd2cb5b8c17d6ba34d5651ea0bf82979"
+  "builtin-baseline": "32305df7d0b9a308e6ac454dd98ebfe550342c09"
 }

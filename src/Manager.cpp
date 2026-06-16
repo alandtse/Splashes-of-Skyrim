@@ -15,19 +15,18 @@ namespace Splashes
 
 	float util::get_water_height(const RE::TESObjectREFR* a_ref, const RE::NiPoint3& a_pos)
 	{
-		float waterHeight = -RE::NI_INFINITY;
+		float waterHeight = a_ref->GetWaterHeight();
+
+		if (!numeric::essentially_equal(waterHeight, -RE::NI_INFINITY)) {
+			return waterHeight;
+		}
 
 		if (const auto waterManager = RE::TESWaterSystem::GetSingleton()) {
-			waterHeight = a_ref->GetWaterHeight();
-
-			if (!numeric::essentially_equal(waterHeight, -RE::NI_INFINITY)) {
-				return waterHeight;
-			}
-
 			const RE::BSSpinLockGuard locker(waterManager->lock);  //serialize against water-system mutations
 
+			const auto settings = Settings::GetSingleton();
+			
 			const auto get_nearest_water_object_height = [&]() {
-				const auto settings = Settings::GetSingleton();
 				for (const auto& waterObjectPtr : waterManager->waterObjects) {
 					const auto waterObject = waterObjectPtr.get();  //read slot once to avoid data race
 					if (!waterObject) {
@@ -115,7 +114,7 @@ namespace Splashes
 		std::uint32_t count = 0;
 		const auto    dataHandler = RE::TESDataHandler::GetSingleton();
 		for (const auto& activator : dataHandler->GetFormArray<RE::TESObjectACTI>()) {
-			if (activator && activator->IsWater() && !activator->QHasCurrents()) {
+			if (activator && activator->IsWater() && !activator->QHasCurrents() && !activator->GetRandomAnim()) {
 				activator->flags.reset(Flag::kNoDisplacement);
 				count++;
 			}
